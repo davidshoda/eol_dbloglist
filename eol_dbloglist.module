@@ -1,0 +1,129 @@
+<?php
+function eol_dbloglist_menu()
+{ 
+  $items = array();
+  $items['admin/reports/eol_dbloglist'] = array(
+    'title' => 'EOL dbloglist',
+    'description' => 'View EOL dbloglist',
+    'page callback' => 'eol_dbloglist',
+    'access arguments' => array('administer eol dbloglist'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+function eol_dbloglist()
+{
+	$distinct_messages_arr = array();
+	$q = "
+	SELECT wid 
+	FROM {watchdog} 
+	ORDER BY timestamp DESC
+	";		
+	$result = db_query($q);
+	$str = "";
+	$error_index = 0;
+	$dbloglist_event_distinct = array();
+	if ($result) {
+		while ($row = $result->fetchAssoc()) {
+			$dbloglist_event = eol_dbloglist_event($row['wid']);
+			if(in_array($dbloglist_event["message"],$distinct_messages_arr)) { continue; } //filter out message redundancies
+			if(
+				!preg_match("/eol\_/i",$dbloglist_event["message"]) &&
+				!preg_match("/themes\/elance/i",$dbloglist_event["message"])		  
+			) { continue; } //filter out messages that do not include in url messsage path eol_*, and themes/elance
+			$distinct_messages_arr[] = $dbloglist_event["message"];
+			$dbloglist_event_distinct[$dbloglist_event["file"]][] = $dbloglist_event;//set to arr key to filename for sortin by file for multiple issues in same fikle
+		}
+		ksort($dbloglist_event_distinct);
+		$dbloglist_event_distinct_ksorted=$dbloglist_event_distinct;
+		foreach($dbloglist_event_distinct_ksorted AS $key=>$dbloglist_event_val) {					  
+			$str.="<div>";
+			$str.="======================================================================";
+			$str.="<br/>";
+			$str.=$key;
+			$str.="<br/>";
+			$str.="======================================================================";
+			$i=0;
+			foreach($dbloglist_event_val AS $val) {
+				if($i>0){
+				  $str.="<br/>";
+				  $str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				  $str.="----------------------------------------------------------------------";
+				}
+				$i++;
+				$error_index++;
+				$str.="<br/>";
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				$str.="Error Index ".$error_index;
+				$str.=" : ";
+				$str.=$val["message"];
+				$str.="<br/>";
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				$str.=$val["date"];
+				$str.="<br/>";
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				$str.="File Line#".$val["file_line_number"];
+				$str.=" , ";
+				$str.=$val["file"];
+				$str.="<br/>";
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				$str.=$val["location"];
+				if(isset($val["referrer"])&&trim($val["referrer"])!='') {
+					$str.=" , referrer = ";
+					$str.=$val["referrer"];
+				}
+			}
+			$str.="</div>";
+		}
+	}    
+	return array('#markup'=>t($str));
+}
+
+
+/**
+ * Modified version of core module dblog_event($id)
+ */
+function eol_dbloglist_event($id) {
+  $severity = watchdog_severity_levels();
+  $result = 
+  db_query(
+  'SELECT w.*, u.name, u.uid 
+  FROM {watchdog} w 
+  INNER JOIN {users} u ON w.uid = u.uid 
+  WHERE w.wid = :id  
+  ORDER BY w.timestamp DESC', 
+  array(':id' => $id))->fetchObject();
+  if ($dblog = $result) {
+  	$dblog_variables = unserialize($dblog->variables);
+  	/* modified datastructure for eol_dbloglist output */
+    return array(
+			t('type')=>
+			t($dblog->type),
+			t('file_line_number')=>
+			t((isset($dblog_variables["%line"]))?$dblog_variables["%line"]:""),   
+			t('file')=>
+			t((isset($dblog_variables["%file"]))?$dblog_variables["%file"]:""),   
+			t('date')=>
+			format_date($dblog->timestamp, 'long'),
+			t('user')=>
+			theme('username', array('account' => $dblog)),
+			t('location')=>
+			t($dblog->location),
+			t('referrer')=>
+			t((isset($dblog->referrer))?$dblog->referrer:""),   
+			t('message')=>
+			theme('dblog_message', array('event' => $dblog)),
+			t('severity')=>
+			$severity[$dblog->severity],
+			t('hostname')=>
+			check_plain($dblog->hostname),
+			t('operations')=>
+			$dblog->link,
+    );
+    return $build;
+  }
+  else {
+    return '';
+  }
+}
+
