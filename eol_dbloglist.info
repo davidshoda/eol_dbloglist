@@ -1,5 +1,5 @@
-477a 1 7fd 4f986 86272
+name = EOL dblog list
 description = List dblog/watchdog messsages uniquely via most recently occurring, exclude pagination for perforce comments, exclude non eol_* prefixed modules and *elance* pathed theme files, group multiple errors in one file by file name and file path
 core = 7.x
-3ad4b55 9 debb8f6
+package = elance
 files[] = eol_dbloglist.module 

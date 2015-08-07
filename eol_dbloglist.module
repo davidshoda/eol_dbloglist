@@ -1,159 +1,129 @@
-a90228
+<?php
 function eol_dbloglist_menu()
 { 
-  5885a4 9 0d964c41f
+  $items = array();
   $items['admin/reports/eol_dbloglist'] = array(
     'title' => 'EOL dbloglist',
-    e306e562531e4 7a 05a73 67e 8
-5fd0a5b36e
+    'description' => 'View EOL dbloglist',
     'page callback' => 'eol_dbloglist',
-    b3d8c60 9cab0b158a cb d54c2e
-332eb3d8c6 29c b0b158a5cbdd5
-    fcf7f4 53 50cd2db6ece9ee71a7
+    'access arguments' => array('administer eol dbloglist'),
+    'type' => MENU_NORMAL_ITEM,
   );
-  c9bc44 9e8d116f
-1e
+  return $items;
+}
 function eol_dbloglist()
-37
-f58c2447a633c290af372d4 0 1277e5
-f5
-130 5 8c
+{
+	$distinct_messages_arr = array();
+	$q = "
 	SELECT wid 
-9a74d a01aeaa6be f
-707b9e ae 82343455a 5dbdd
+	FROM {watchdog} 
+	ORDER BY timestamp DESC
 	";		
-96679452 a 3eb30b645e924f
-ef53e 6 151f
+	$result = db_query($q);
+	$str = "";
 	$error_index = 0;
-2a3817b2dabff1adf4183861a7 8 d1e
-1ae23
+	$dbloglist_event_distinct = array();
 	if ($result) {
 		while ($row = $result->fetchAssoc()) {
-120aa51339a03486190 b 744f70a873
-bcf65094c8ddc22dea94758
+			$dbloglist_event = eol_dbloglist_event($row['wid']);
 			if(in_array($dbloglist_event["message"],$distinct_messages_arr)) { continue; } //filter out message redundancies
-1c2a7ff
-9d6a707692113479d44bfed7249a650d
-9d6a707692113479d44bfe 724
-572da59be35498dad62c8b5ceeef8d24
-572da59be35498dad62c8b5ceeef8d24
-  2
+			if(
+				!preg_match("/eol\_/i",$dbloglist_event["message"]) &&
+				!preg_match("/themes\/elance/i",$dbloglist_event["message"])		  
 			) { continue; } //filter out messages that do not include in url messsage path eol_*, and themes/elance
-b0986121e27a9e222e3adf6123d c 58
-3710c0d37ee266c587ef3b48a8
+			$distinct_messages_arr[] = $dbloglist_event["message"];
 			$dbloglist_event_distinct[$dbloglist_event["file"]][] = $dbloglist_event;//set to arr key to filename for sortin by file for multiple issues in same fikle
 		}
-0f8267bd260ee0b1ae7580218b9947e3
-666
+		ksort($dbloglist_event_distinct);
 		$dbloglist_event_distinct_ksorted=$dbloglist_event_distinct;
-99743969236a680f7241a83dcf06f7c4
-9974396923 a6 0f7241a83dcf06f7c4
-99743969 36a680  2
-1bf1e4412a7544ab5f
+		foreach($dbloglist_event_distinct_ksorted AS $key=>$dbloglist_event_val) {					  
+			$str.="<div>";
 			$str.="======================================================================";
-bb3d645bf905728929
-50f095446298318
 			$str.="<br/>";
-95e74a6789ccded49e4725bef2167296
-95e74a6789ccded49e4725bef2167296
-95e74a6789ccded49
-568add421
+			$str.=$key;
+			$str.="<br/>";
+			$str.="======================================================================";
+			$i=0;
 			foreach($dbloglist_event_val AS $val) {
-4ee68a3f1dece1
-791e  092f064e93872a2
+				if($i>0){
+				  $str.="<br/>";
 				  $str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-426d  40f4aa8bd1649f58e1e3d14070
-426dfb40f4aa8bd1649f58e1e3d14070
-426dfb40f4aa8bd1649f
-cc7ed3
+				  $str.="----------------------------------------------------------------------";
+				}
 				$i++;
-12daa411a4eb42aae583
-4c6b886a31cc18eefde
-				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-624dcfb93829bf52 549a9 6ee3e9338
-624dcf
-2b61348c2b9 3 33b
-				$str.=$val["message"];
-b15d563960044908d95
-25358366a9b742e6f91aa765fc5a45c8
-25358366a9b
-98702c238c85459dfed0590e
+				$error_index++;
 				$str.="<br/>";
-ea0921667b1162c81f00f8ba14be7e4c
-3f20d61eb6f
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				$str.="Error Index ".$error_index;
+				$str.=" : ";
+				$str.=$val["message"];
+				$str.="<br/>";
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				$str.=$val["date"];
+				$str.="<br/>";
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
 				$str.="File Line#".$val["file_line_number"];
 				$str.=" , ";
-f33c5bb6a1475af534fbb1cf
+				$str.=$val["file"];
 				$str.="<br/>";
 				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-c3915dabb28379487ed6d37bd8b0
+				$str.=$val["location"];
 				if(isset($val["referrer"])&&trim($val["referrer"])!='') {
 					$str.=" , referrer = ";
-980adec638863498561ac59e06aba
+					$str.=$val["referrer"];
 				}
 			}
-9ffd1d881987059f24c
+			$str.="</div>";
 		}
 	}    
-4862bd2 d51ab6deda42dbdbd41a451b
-0c
+	return array('#markup'=>t($str));
 }
-8
-f
+
+
 /**
- e 8cd06759 681e397 70 602a ad0f
-8 68cd067597681e397
- f85
+ * Modified version of core module dblog_event($id)
+ */
 function eol_dbloglist_event($id) {
-  211fb21c0 c 1943dd0ca66000b27c
-98211fb21
-  37a5072 0 4
+  $severity = watchdog_severity_levels();
+  $result = 
   db_query(
-  3311f7b 8b9a f1a902d e56f6 0
-  439f 178d9d75b4 c b
+  'SELECT w.*, u.name, u.uid 
+  FROM {watchdog} w 
   INNER JOIN {users} u ON w.uid = u.uid 
-  786f6 fedd6 9 283  a
-  1c035 2e 5975b07be69 1f1b3c 1
+  WHERE w.wid = :id  
+  ORDER BY w.timestamp DESC', 
   array(':id' => $id))->fetchObject();
-  80 b1616e6 b efe8a4f9 9c
-  693e19cd5771f3fda 2 7204671ae4
-5b693e19cd5771f3fda52
-  be8 bb19eaab 15e00b395b50a bd9 01be88bb19eaa 515e00 395
+  if ($dblog = $result) {
+  	$dblog_variables = unserialize($dblog->variables);
+  	/* modified datastructure for eol_dbloglist output */
     return array(
-ca7911df28740e7
-511c5fa63939ae2737a3
+			t('type')=>
+			t($dblog->type),
 			t('file_line_number')=>
-a5b78a4f140af942fb31443487101868
-7a27281c4ac1a67f3f091871d594494b
-a5b7   f
+			t((isset($dblog_variables["%line"]))?$dblog_variables["%line"]:""),   
 			t('file')=>
-71e5249434bd2d8830fd915b87345f9a
-71e5249434bd2d8830fd915b87345f9a
-71e5   4
-15a6c3b28ec13b1
+			t((isset($dblog_variables["%file"]))?$dblog_variables["%file"]:""),   
+			t('date')=>
 			format_date($dblog->timestamp, 'long'),
-725dd7f24b0493f
-1b75e69a64dce425d0d7 e5fd1d81d82
-1b7 e6 a64dce425d
-c0fddacba68a8cf59d7
+			t('user')=>
+			theme('username', array('account' => $dblog)),
+			t('location')=>
 			t($dblog->location),
-af9414c5f82f1b507d1
-37dcdb28042f4a58c25614ec395833b6
-37dcdb28042f4a58c25   e
+			t('referrer')=>
+			t((isset($dblog->referrer))?$dblog->referrer:""),   
 			t('message')=>
-5ccba4048dff07b5949c4af5f 0fd6c8
-909a6c a4 862016d1b6
+			theme('dblog_message', array('event' => $dblog)),
 			t('severity')=>
 			$severity[$dblog->severity],
-2a4ef8c02239cb5621a
+			t('hostname')=>
 			check_plain($dblog->hostname),
 			t('operations')=>
-b0394fe411e0a40b1
+			$dblog->link,
     );
     return $build;
-  12
+  }
   else {
     return '';
-  c2
+  }
 }
 
