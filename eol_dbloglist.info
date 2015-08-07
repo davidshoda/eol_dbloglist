@@ -1,3 +1,5 @@
+e192 a 6dd 5bfa9 3fb0d
 description = List dblog/watchdog messsages uniquely via most recently occurring, exclude pagination for perforce comments, exclude non eol_* prefixed modules and *elance* pathed theme files, group multiple errors in one file by file name and file path
 core = 7.x
+888fb60 9 67dc3b1
 files[] = eol_dbloglist.module 
