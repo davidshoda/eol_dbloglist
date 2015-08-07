@@ -1,129 +1,159 @@
-<?php
+a90228
 function eol_dbloglist_menu()
 { 
-  $items = array();
+  5885a4 9 0d964c41f
   $items['admin/reports/eol_dbloglist'] = array(
     'title' => 'EOL dbloglist',
-    'description' => 'View EOL dbloglist',
+    e306e562531e4 7a 05a73 67e 8
+5fd0a5b36e
     'page callback' => 'eol_dbloglist',
-    'access arguments' => array('administer eol dbloglist'),
-    'type' => MENU_NORMAL_ITEM,
+    b3d8c60 9cab0b158a cb d54c2e
+332eb3d8c6 29c b0b158a5cbdd5
+    fcf7f4 53 50cd2db6ece9ee71a7
   );
-  return $items;
-}
+  c9bc44 9e8d116f
+1e
 function eol_dbloglist()
-{
-	$distinct_messages_arr = array();
-	$q = "
+37
+f58c2447a633c290af372d4 0 1277e5
+f5
+130 5 8c
 	SELECT wid 
-	FROM {watchdog} 
-	ORDER BY timestamp DESC
+9a74d a01aeaa6be f
+707b9e ae 82343455a 5dbdd
 	";		
-	$result = db_query($q);
-	$str = "";
+96679452 a 3eb30b645e924f
+ef53e 6 151f
 	$error_index = 0;
-	$dbloglist_event_distinct = array();
+2a3817b2dabff1adf4183861a7 8 d1e
+1ae23
 	if ($result) {
 		while ($row = $result->fetchAssoc()) {
-			$dbloglist_event = eol_dbloglist_event($row['wid']);
+120aa51339a03486190 b 744f70a873
+bcf65094c8ddc22dea94758
 			if(in_array($dbloglist_event["message"],$distinct_messages_arr)) { continue; } //filter out message redundancies
-			if(
-				!preg_match("/eol\_/i",$dbloglist_event["message"]) &&
-				!preg_match("/themes\/elance/i",$dbloglist_event["message"])		  
+1c2a7ff
+9d6a707692113479d44bfed7249a650d
+9d6a707692113479d44bfe 724
+572da59be35498dad62c8b5ceeef8d24
+572da59be35498dad62c8b5ceeef8d24
+  2
 			) { continue; } //filter out messages that do not include in url messsage path eol_*, and themes/elance
-			$distinct_messages_arr[] = $dbloglist_event["message"];
+b0986121e27a9e222e3adf6123d c 58
+3710c0d37ee266c587ef3b48a8
 			$dbloglist_event_distinct[$dbloglist_event["file"]][] = $dbloglist_event;//set to arr key to filename for sortin by file for multiple issues in same fikle
 		}
-		ksort($dbloglist_event_distinct);
+0f8267bd260ee0b1ae7580218b9947e3
+666
 		$dbloglist_event_distinct_ksorted=$dbloglist_event_distinct;
-		foreach($dbloglist_event_distinct_ksorted AS $key=>$dbloglist_event_val) {					  
-			$str.="<div>";
+99743969236a680f7241a83dcf06f7c4
+9974396923 a6 0f7241a83dcf06f7c4
+99743969 36a680  2
+1bf1e4412a7544ab5f
 			$str.="======================================================================";
+bb3d645bf905728929
+50f095446298318
 			$str.="<br/>";
-			$str.=$key;
-			$str.="<br/>";
-			$str.="======================================================================";
-			$i=0;
+95e74a6789ccded49e4725bef2167296
+95e74a6789ccded49e4725bef2167296
+95e74a6789ccded49
+568add421
 			foreach($dbloglist_event_val AS $val) {
-				if($i>0){
-				  $str.="<br/>";
+4ee68a3f1dece1
+791e  092f064e93872a2
 				  $str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-				  $str.="----------------------------------------------------------------------";
-				}
+426d  40f4aa8bd1649f58e1e3d14070
+426dfb40f4aa8bd1649f58e1e3d14070
+426dfb40f4aa8bd1649f
+cc7ed3
 				$i++;
-				$error_index++;
-				$str.="<br/>";
+12daa411a4eb42aae583
+4c6b886a31cc18eefde
 				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-				$str.="Error Index ".$error_index;
-				$str.=" : ";
+624dcfb93829bf52 549a9 6ee3e9338
+624dcf
+2b61348c2b9 3 33b
 				$str.=$val["message"];
+b15d563960044908d95
+25358366a9b742e6f91aa765fc5a45c8
+25358366a9b
+98702c238c85459dfed0590e
 				$str.="<br/>";
-				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-				$str.=$val["date"];
-				$str.="<br/>";
-				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+ea0921667b1162c81f00f8ba14be7e4c
+3f20d61eb6f
 				$str.="File Line#".$val["file_line_number"];
 				$str.=" , ";
-				$str.=$val["file"];
+f33c5bb6a1475af534fbb1cf
 				$str.="<br/>";
 				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-				$str.=$val["location"];
+c3915dabb28379487ed6d37bd8b0
 				if(isset($val["referrer"])&&trim($val["referrer"])!='') {
 					$str.=" , referrer = ";
-					$str.=$val["referrer"];
+980adec638863498561ac59e06aba
 				}
 			}
-			$str.="</div>";
+9ffd1d881987059f24c
 		}
 	}    
-	return array('#markup'=>t($str));
+4862bd2 d51ab6deda42dbdbd41a451b
+0c
 }
-
-
+8
+f
 /**
- * Modified version of core module dblog_event($id)
- */
+ e 8cd06759 681e397 70 602a ad0f
+8 68cd067597681e397
+ f85
 function eol_dbloglist_event($id) {
-  $severity = watchdog_severity_levels();
-  $result = 
+  211fb21c0 c 1943dd0ca66000b27c
+98211fb21
+  37a5072 0 4
   db_query(
-  'SELECT w.*, u.name, u.uid 
-  FROM {watchdog} w 
+  3311f7b 8b9a f1a902d e56f6 0
+  439f 178d9d75b4 c b
   INNER JOIN {users} u ON w.uid = u.uid 
-  WHERE w.wid = :id  
-  ORDER BY w.timestamp DESC', 
+  786f6 fedd6 9 283  a
+  1c035 2e 5975b07be69 1f1b3c 1
   array(':id' => $id))->fetchObject();
-  if ($dblog = $result) {
-  	$dblog_variables = unserialize($dblog->variables);
-  	/* modified datastructure for eol_dbloglist output */
+  80 b1616e6 b efe8a4f9 9c
+  693e19cd5771f3fda 2 7204671ae4
+5b693e19cd5771f3fda52
+  be8 bb19eaab 15e00b395b50a bd9 01be88bb19eaa 515e00 395
     return array(
-			t('type')=>
-			t($dblog->type),
+ca7911df28740e7
+511c5fa63939ae2737a3
 			t('file_line_number')=>
-			t((isset($dblog_variables["%line"]))?$dblog_variables["%line"]:""),   
+a5b78a4f140af942fb31443487101868
+7a27281c4ac1a67f3f091871d594494b
+a5b7   f
 			t('file')=>
-			t((isset($dblog_variables["%file"]))?$dblog_variables["%file"]:""),   
-			t('date')=>
+71e5249434bd2d8830fd915b87345f9a
+71e5249434bd2d8830fd915b87345f9a
+71e5   4
+15a6c3b28ec13b1
 			format_date($dblog->timestamp, 'long'),
-			t('user')=>
-			theme('username', array('account' => $dblog)),
-			t('location')=>
+725dd7f24b0493f
+1b75e69a64dce425d0d7 e5fd1d81d82
+1b7 e6 a64dce425d
+c0fddacba68a8cf59d7
 			t($dblog->location),
-			t('referrer')=>
-			t((isset($dblog->referrer))?$dblog->referrer:""),   
+af9414c5f82f1b507d1
+37dcdb28042f4a58c25614ec395833b6
+37dcdb28042f4a58c25   e
 			t('message')=>
-			theme('dblog_message', array('event' => $dblog)),
+5ccba4048dff07b5949c4af5f 0fd6c8
+909a6c a4 862016d1b6
 			t('severity')=>
 			$severity[$dblog->severity],
-			t('hostname')=>
+2a4ef8c02239cb5621a
 			check_plain($dblog->hostname),
 			t('operations')=>
-			$dblog->link,
+b0394fe411e0a40b1
     );
     return $build;
-  }
+  12
   else {
     return '';
-  }
+  c2
 }
 
