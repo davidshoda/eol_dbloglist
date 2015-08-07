@@ -1,0 +1,86 @@
+function eol_dbloglist_menu()
+{ 
+  $items['admin/reports/eol_dbloglist'] = array(
+    'title' => 'EOL dbloglist',
+    'page callback' => 'eol_dbloglist',
+    'access arguments' => array('administer eol dbloglist'),
+  );
+  return $items;
+function eol_dbloglist()
+{
+	$q = "
+	SELECT wid 
+	ORDER BY timestamp DESC
+	";		
+	$str = "";
+	$error_index = 0;
+	if ($result) {
+		while ($row = $result->fetchAssoc()) {
+			if(in_array($dbloglist_event["message"],$distinct_messages_arr)) { continue; } //filter out message redundancies
+			if(
+				!preg_match("/themes\/elance/i",$dbloglist_event["message"])		  
+			) { continue; } //filter out messages that do not include in url messsage path eol_*, and themes/elance
+			$dbloglist_event_distinct[$dbloglist_event["file"]][] = $dbloglist_event;//set to arr key to filename for sortin by file for multiple issues in same fikle
+		}
+		$dbloglist_event_distinct_ksorted=$dbloglist_event_distinct;
+		foreach($dbloglist_event_distinct_ksorted AS $key=>$dbloglist_event_val) {					  
+			$str.="======================================================================";
+			$str.="<br/>";
+			$str.="<br/>";
+			$str.="======================================================================";
+			foreach($dbloglist_event_val AS $val) {
+				if($i>0){
+				  $str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				  $str.="----------------------------------------------------------------------";
+				$i++;
+				$error_index++;
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				$str.="Error Index ".$error_index;
+				$str.=$val["message"];
+				$str.="<br/>";
+				$str.=$val["date"];
+				$str.="<br/>";
+				$str.="File Line#".$val["file_line_number"];
+				$str.=" , ";
+				$str.="<br/>";
+				$str.="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+				if(isset($val["referrer"])&&trim($val["referrer"])!='') {
+					$str.=" , referrer = ";
+				}
+			}
+		}
+	}    
+}
+
+/**
+ * Modified version of core module dblog_event($id)
+function eol_dbloglist_event($id) {
+  $severity = watchdog_severity_levels();
+  db_query(
+  'SELECT w.*, u.name, u.uid 
+  INNER JOIN {users} u ON w.uid = u.uid 
+  WHERE w.wid = :id  
+  array(':id' => $id))->fetchObject();
+  if ($dblog = $result) {
+  	/* modified datastructure for eol_dbloglist output */
+    return array(
+			t($dblog->type),
+			t('file_line_number')=>
+			t('file')=>
+			t((isset($dblog_variables["%file"]))?$dblog_variables["%file"]:""),   
+			format_date($dblog->timestamp, 'long'),
+			t('user')=>
+			t('location')=>
+			t($dblog->location),
+			t((isset($dblog->referrer))?$dblog->referrer:""),   
+			t('message')=>
+			t('severity')=>
+			$severity[$dblog->severity],
+			check_plain($dblog->hostname),
+			t('operations')=>
+    );
+    return $build;
+  else {
+    return '';
+}
+
